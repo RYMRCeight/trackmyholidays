@@ -169,7 +169,10 @@ function generate() {
     }
   }
 
-  let maxRows = Math.max(leftColumn.length, rightColumn.length);
+  let leftTotal = leftColumn.length;
+  let rightTotal = rightColumn.length;
+
+  let maxRows = Math.max(leftTotal, rightTotal);
   let rows = "";
 
   for (let i = 0; i < maxRows; i++) {
@@ -189,8 +192,8 @@ function generate() {
   document.getElementById("output").innerHTML = `
     <table>
       <tr>
-        <th>1 - 15</th>
-        <th>16 - ${lastDay}</th>
+        <th>1 - 15<br><small>Total: ${leftTotal}</small></th>
+        <th>16 - ${lastDay}<br><small>Total: ${rightTotal}</small></th>
       </tr>
       ${rows}
     </table>
@@ -198,7 +201,6 @@ function generate() {
 
   renderOverrideList();
 }
-
 function addOverride() {
   let date = document.getElementById("overrideDate").value;
   if (!date) return alert("Select a date first.");

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>DTR Generator - PH Locked 2026</title>
+
+<style>
+body {
+  font-family: Arial;
+  padding: 30px;
+  background: #f4f6fb;
+}
+
+h2 { color: #0038a8; }
+
+select, button, input {
+  padding: 6px;
+  margin: 5px;
+}
+
+button {
+  background: #ce1126;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.green { background: #28a745; }
+.red { background: #dc3545; }
+
+table {
+  margin-top: 20px;
+  border-collapse: collapse;
+  background: white;
+  width: 650px;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+  vertical-align: top;
+}
+
+th {
+  background: #0038a8;
+  color: white;
+}
+
+.override-box {
+  margin-top: 20px;
+  padding: 15px;
+  background: white;
+  border-left: 5px solid #0038a8;
+  width: 650px;
+}
+
+.override-list {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.highlight {
+  background-color: #fff3cd;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🇵🇭 DTR Generator (PH Timezone Locked - 2026)</h2>
+
+<label>Month:</label>
+<select id="month">
+  <option value="0">January</option>
+  <option value="1">February</option>
+  <option value="2">March</option>
+  <option value="3">April</option>
+  <option value="4">May</option>
+  <option value="5">June</option>
+  <option value="6">July</option>
+  <option value="7">August</option>
+  <option value="8">September</option>
+  <option value="9">October</option>
+  <option value="10">November</option>
+  <option value="11">December</option>
+</select>
+
+<button onclick="generate()">Generate</button>
+
+<div id="output"></div>
+
+<div class="override-box">
+  <h3>➕ Include Saturday / Sunday / Holiday (Override)</h3>
+  <input type="date" id="overrideDate">
+  <button class="green" onclick="addOverride()">Include Date</button>
+
+  <div class="override-list" id="overrideList"></div>
+</div>
+
+<script>
+
+const YEAR = 2026;
+let overrides = [];
+
+/* ==============================
+   PROCLAMATION 2026 HOLIDAYS
+   ============================== */
+function getExcludedHolidays() {
+  return [
+    "2026-01-01","2026-04-02","2026-04-03","2026-04-09",
+    "2026-05-01","2026-06-12","2026-08-31","2026-11-30",
+    "2026-12-25","2026-12-30",
+    "2026-08-21","2026-11-01","2026-12-08","2026-12-31",
+    "2026-02-17","2026-04-04","2026-11-02","2026-12-24"
+  ];
+}
+
+/* ==============================
+   SAFE DATE FORMAT
+   ============================== */
+function getLocalISO(year, month, day) {
+  let mm = String(month + 1).padStart(2, '0');
+  let dd = String(day).padStart(2, '0');
+  return `${year}-${mm}-${dd}`;
+}
+
+function formatDisplay(month, day) {
+  const months = ["Jan","Feb","Mar","Apr","May","Jun",
+                  "Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${months[month]}-${String(day).padStart(2,'0')}-26`;
+}
+
+/* ==============================
+   GENERATE TABLE
+   ============================== */
+function generate() {
+
+  let month = parseInt(document.getElementById("month").value);
+  let lastDay = new Date(YEAR, month + 1, 0).getDate();
+  let holidays = getExcludedHolidays();
+
+  let firstHalf = [];
+  let secondHalf = [];
+
+  for (let d = 1; d <= lastDay; d++) {
+
+    let current = new Date(YEAR, month, d, 12);
+    let weekday = current.getDay();
+    let iso = getLocalISO(YEAR, month, d);
+
+    let isWeekend = (weekday === 0 || weekday === 6);
+    let isHoliday = holidays.includes(iso);
+
+    let include = (!isWeekend && !isHoliday) || overrides.includes(iso);
+
+    if (include) {
+      if (d <= 15) {
+        firstHalf.push({iso, text: formatDisplay(month,d)});
+      } else {
+        secondHalf.push({iso, text: formatDisplay(month,d)});
+      }
+    }
+  }
+
+  let maxRows = Math.max(firstHalf.length, secondHalf.length);
+  let rows = "";
+
+  for (let i = 0; i < maxRows; i++) {
+
+    let left = firstHalf[i];
+    let right = secondHalf[i];
+
+    rows += `
+      <tr>
+        <td class="${left && overrides.includes(left.iso) ? 'highlight' : ''}">
+          ${left ? left.text : ""}
+        </td>
+        <td class="${right && overrides.includes(right.iso) ? 'highlight' : ''}">
+          ${right ? right.text : ""}
+        </td>
+      </tr>
+    `;
+  }
+
+  document.getElementById("output").innerHTML = `
+    <table>
+      <tr>
+        <th>1 - 15</th>
+        <th>16 - ${lastDay}</th>
+      </tr>
+      ${rows}
+    </table>
+  `;
+
+  renderOverrideList();
+}
+
+/* ==============================
+   OVERRIDE FUNCTIONS
+   ============================== */
+
+function addOverride() {
+  let date = document.getElementById("overrideDate").value;
+  if (!date) return alert("Select a date first.");
+
+  if (!overrides.includes(date)) {
+    overrides.push(date);
+  }
+
+  generate();
+}
+
+function removeOverride(date) {
+  overrides = overrides.filter(d => d !== date);
+  generate();
+}
+
+function renderOverrideList() {
+
+  if (overrides.length === 0) {
+    document.getElementById("overrideList").innerHTML =
+      "<em>No custom dates added.</em>";
+    return;
+  }
+
+  let html = "<strong>Custom Included Dates:</strong><br>";
+
+  overrides.forEach(date => {
+    html += `
+      ${date}
+      <button class="red" onclick="removeOverride('${date}')">Remove</button>
+      <br>
+    `;
+  });
+
+  document.getElementById("overrideList").innerHTML = html;
+}
+
+</script>
+
+</body>
+</html>

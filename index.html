@@ -128,7 +128,7 @@ function getLocalISO(year, month, day) {
 function formatDisplay(month, day) {
   const months = ["Jan","Feb","Mar","Apr","May","Jun",
                   "Jul","Aug","Sep","Oct","Nov","Dec"];
-  return `${months[month]}-${String(day).padStart(2,'0')}-26`;
+  return `${day}-${months[month]}`;
 }
 
 let leftColumn = [];

@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>DTR Generator - PH Locked 2026</title>
+<title>DTR Generator - FULL PRO 2026</title>
 
 <style>
 body {
@@ -52,6 +52,14 @@ th {
   background-color: #fff3cd;
 }
 
+.override-box {
+  margin-top: 20px;
+  padding: 15px;
+  background: white;
+  border-left: 5px solid #0038a8;
+  width: 650px;
+}
+
 .copy-controls {
   margin-top: 10px;
 }
@@ -60,7 +68,7 @@ th {
 
 <body>
 
-<h2>🇵🇭 DTR Generator (PH Timezone Locked - 2026)</h2>
+<h2>🇵🇭 DTR Generator (FULL PRO - 2026)</h2>
 
 <label>Month:</label>
 <select id="month">
@@ -87,6 +95,14 @@ th {
 </div>
 
 <div id="output"></div>
+
+<div class="override-box">
+  <h3>➕ Include Saturday / Sunday / Holiday (Override)</h3>
+  <input type="date" id="overrideDate">
+  <button class="green" onclick="addOverride()">Include Date</button>
+
+  <div id="overrideList"></div>
+</div>
 
 <script>
 
@@ -117,11 +133,15 @@ function formatDisplay(month, day) {
 
 let leftColumn = [];
 let rightColumn = [];
+let leftISO = [];
+let rightISO = [];
 
 function generate() {
 
   leftColumn = [];
   rightColumn = [];
+  leftISO = [];
+  rightISO = [];
 
   let month = parseInt(document.getElementById("month").value);
   let lastDay = new Date(YEAR, month + 1, 0).getDate();
@@ -136,12 +156,15 @@ function generate() {
     let isWeekend = (weekday === 0 || weekday === 6);
     let isHoliday = holidays.includes(iso);
 
-    if (!isWeekend && !isHoliday) {
+    let include = (!isWeekend && !isHoliday) || overrides.includes(iso);
 
+    if (include) {
       if (d <= 15) {
         leftColumn.push(formatDisplay(month,d));
+        leftISO.push(iso);
       } else {
         rightColumn.push(formatDisplay(month,d));
+        rightISO.push(iso);
       }
     }
   }
@@ -150,10 +173,15 @@ function generate() {
   let rows = "";
 
   for (let i = 0; i < maxRows; i++) {
+
     rows += `
       <tr>
-        <td>${leftColumn[i] || ""}</td>
-        <td>${rightColumn[i] || ""}</td>
+        <td class="${leftISO[i] && overrides.includes(leftISO[i]) ? 'highlight' : ''}">
+          ${leftColumn[i] || ""}
+        </td>
+        <td class="${rightISO[i] && overrides.includes(rightISO[i]) ? 'highlight' : ''}">
+          ${rightColumn[i] || ""}
+        </td>
       </tr>
     `;
   }
@@ -167,9 +195,44 @@ function generate() {
       ${rows}
     </table>
   `;
+
+  renderOverrideList();
 }
 
-/* COPY FUNCTIONS */
+function addOverride() {
+  let date = document.getElementById("overrideDate").value;
+  if (!date) return alert("Select a date first.");
+  if (!overrides.includes(date)) overrides.push(date);
+  generate();
+}
+
+function removeOverride(date) {
+  overrides = overrides.filter(d => d !== date);
+  generate();
+}
+
+function renderOverrideList() {
+
+  if (overrides.length === 0) {
+    document.getElementById("overrideList").innerHTML =
+      "<em>No custom dates added.</em>";
+    return;
+  }
+
+  let html = "<strong>Custom Included Dates:</strong><br>";
+
+  overrides.forEach(date => {
+    html += `
+      ${date}
+      <button class="red" onclick="removeOverride('${date}')">Remove</button>
+      <br>
+    `;
+  });
+
+  document.getElementById("overrideList").innerHTML = html;
+}
+
+/* COPY */
 
 function copyColumn(col) {
   let data = col === 1 ? leftColumn : rightColumn;

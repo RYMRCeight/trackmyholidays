@@ -27,6 +27,7 @@ button {
 
 .green { background: #28a745; }
 .red { background: #dc3545; }
+.blue { background: #007bff; }
 
 table {
   margin-top: 20px;
@@ -47,21 +48,12 @@ th {
   color: white;
 }
 
-.override-box {
-  margin-top: 20px;
-  padding: 15px;
-  background: white;
-  border-left: 5px solid #0038a8;
-  width: 650px;
-}
-
-.override-list {
-  margin-top: 10px;
-  font-size: 14px;
-}
-
 .highlight {
   background-color: #fff3cd;
+}
+
+.copy-controls {
+  margin-top: 10px;
 }
 </style>
 </head>
@@ -88,24 +80,19 @@ th {
 
 <button onclick="generate()">Generate</button>
 
-<div id="output"></div>
-
-<div class="override-box">
-  <h3>➕ Include Saturday / Sunday / Holiday (Override)</h3>
-  <input type="date" id="overrideDate">
-  <button class="green" onclick="addOverride()">Include Date</button>
-
-  <div class="override-list" id="overrideList"></div>
+<div class="copy-controls">
+  <button class="blue" onclick="copyColumn(1)">Copy 1–15</button>
+  <button class="blue" onclick="copyColumn(2)">Copy 16–End</button>
+  <button class="green" onclick="copyWhole()">Copy All</button>
 </div>
+
+<div id="output"></div>
 
 <script>
 
 const YEAR = 2026;
 let overrides = [];
 
-/* ==============================
-   PROCLAMATION 2026 HOLIDAYS
-   ============================== */
 function getExcludedHolidays() {
   return [
     "2026-01-01","2026-04-02","2026-04-03","2026-04-09",
@@ -116,9 +103,6 @@ function getExcludedHolidays() {
   ];
 }
 
-/* ==============================
-   SAFE DATE FORMAT
-   ============================== */
 function getLocalISO(year, month, day) {
   let mm = String(month + 1).padStart(2, '0');
   let dd = String(day).padStart(2, '0');
@@ -131,17 +115,17 @@ function formatDisplay(month, day) {
   return `${months[month]}-${String(day).padStart(2,'0')}-26`;
 }
 
-/* ==============================
-   GENERATE TABLE
-   ============================== */
+let leftColumn = [];
+let rightColumn = [];
+
 function generate() {
+
+  leftColumn = [];
+  rightColumn = [];
 
   let month = parseInt(document.getElementById("month").value);
   let lastDay = new Date(YEAR, month + 1, 0).getDate();
   let holidays = getExcludedHolidays();
-
-  let firstHalf = [];
-  let secondHalf = [];
 
   for (let d = 1; d <= lastDay; d++) {
 
@@ -152,33 +136,24 @@ function generate() {
     let isWeekend = (weekday === 0 || weekday === 6);
     let isHoliday = holidays.includes(iso);
 
-    let include = (!isWeekend && !isHoliday) || overrides.includes(iso);
+    if (!isWeekend && !isHoliday) {
 
-    if (include) {
       if (d <= 15) {
-        firstHalf.push({iso, text: formatDisplay(month,d)});
+        leftColumn.push(formatDisplay(month,d));
       } else {
-        secondHalf.push({iso, text: formatDisplay(month,d)});
+        rightColumn.push(formatDisplay(month,d));
       }
     }
   }
 
-  let maxRows = Math.max(firstHalf.length, secondHalf.length);
+  let maxRows = Math.max(leftColumn.length, rightColumn.length);
   let rows = "";
 
   for (let i = 0; i < maxRows; i++) {
-
-    let left = firstHalf[i];
-    let right = secondHalf[i];
-
     rows += `
       <tr>
-        <td class="${left && overrides.includes(left.iso) ? 'highlight' : ''}">
-          ${left ? left.text : ""}
-        </td>
-        <td class="${right && overrides.includes(right.iso) ? 'highlight' : ''}">
-          ${right ? right.text : ""}
-        </td>
+        <td>${leftColumn[i] || ""}</td>
+        <td>${rightColumn[i] || ""}</td>
       </tr>
     `;
   }
@@ -192,49 +167,20 @@ function generate() {
       ${rows}
     </table>
   `;
-
-  renderOverrideList();
 }
 
-/* ==============================
-   OVERRIDE FUNCTIONS
-   ============================== */
+/* COPY FUNCTIONS */
 
-function addOverride() {
-  let date = document.getElementById("overrideDate").value;
-  if (!date) return alert("Select a date first.");
-
-  if (!overrides.includes(date)) {
-    overrides.push(date);
-  }
-
-  generate();
+function copyColumn(col) {
+  let data = col === 1 ? leftColumn : rightColumn;
+  navigator.clipboard.writeText(data.join("\n"));
+  alert("Copied!");
 }
 
-function removeOverride(date) {
-  overrides = overrides.filter(d => d !== date);
-  generate();
-}
-
-function renderOverrideList() {
-
-  if (overrides.length === 0) {
-    document.getElementById("overrideList").innerHTML =
-      "<em>No custom dates added.</em>";
-    return;
-  }
-
-  let html = "<strong>Custom Included Dates:</strong><br>";
-
-  overrides.forEach(date => {
-    html += `
-      ${date}
-      <button class="red" onclick="removeOverride('${date}')">Remove</button>
-      <br>
-    `;
-  });
-
-  document.getElementById("overrideList").innerHTML = html;
+function copyWhole() {
+  let combined = leftColumn.concat(rightColumn);
+  navigator.clipboard.writeText(combined.join("\n"));
+  alert("Copied All!");
 }
 
 </script>
